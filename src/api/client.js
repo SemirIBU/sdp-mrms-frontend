@@ -1,5 +1,17 @@
 import axios from 'axios';
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api' });
+
+const getApiUrl = () => {
+  try {
+    // Use eval to prevent Jest from parsing import.meta at compile time
+    const meta = eval('import.meta');
+    return meta?.env?.VITE_API_URL || 'http://localhost:4000/api';
+  } catch (e) {
+    // Fall back for Jest environment
+    return process.env.VITE_API_URL || 'http://localhost:4000/api';
+  }
+};
+
+const API = axios.create({ baseURL: getApiUrl() });
 API.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token');
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
