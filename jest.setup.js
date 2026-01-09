@@ -1,19 +1,13 @@
 import '@testing-library/jest-dom';
 
-// Mock import.meta for Vite
-global.importMeta = {
-  env: {
-    VITE_API_URL: 'http://localhost:4000/api'
-  }
-};
+// Set test environment
+process.env.NODE_ENV = 'test';
+process.env.VITE_API_URL = 'http://localhost:4001/api';
 
-// Mock import.meta.env
-Object.defineProperty(global, 'import', {
-  value: {
-    meta: {
-      env: {
-        VITE_API_URL: 'http://localhost:4000/api'
-      }
-    }
-  }
-});
+// Mock localStorage
+global.localStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};

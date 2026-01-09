@@ -2,11 +2,12 @@ import axios from 'axios';
 
 // Vite injects import.meta.env.* at build time; fall back to process.env for tests
 const getApiUrl = () => {
-  return (
-    (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_URL : undefined) ||
-    process.env.VITE_API_URL ||
-    'http://localhost:4001/api'
-  );
+  // Check if we're in a test environment
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    return process.env.VITE_API_URL || 'http://localhost:4001/api';
+  }
+  // In Vite build/dev environment
+  return import.meta.env?.VITE_API_URL || 'http://localhost:4001/api';
 };
 
 const API = axios.create({ baseURL: getApiUrl() });
