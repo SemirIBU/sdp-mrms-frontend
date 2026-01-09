@@ -20,6 +20,7 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import LoadingButton from '../components/LoadingButton';
 
 export default function UserDetails() {
   const { id } = useParams();
@@ -27,6 +28,7 @@ export default function UserDetails() {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', role: '', active: true });
   const [loading, setLoading] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function UserDetails() {
 
   const handleToggleActive = async () => {
     try {
+      setToggling(true);
       const res = await API.patch(`/users/${id}/toggle-active`);
       setUser({ ...user, active: res.data.active });
       setForm({ ...form, active: res.data.active });
@@ -62,6 +65,8 @@ export default function UserDetails() {
       setConfirmOpen(false);
     } catch (e) {
       toast.error('Failed to toggle user status');
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -116,19 +121,19 @@ export default function UserDetails() {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Button
+            <LoadingButton
               variant="contained"
               onClick={handleSave}
-              disabled={loading}
+              loading={loading}
             >
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
+              Save Changes
+            </LoadingButton>
             <Button
               variant="outlined"
               color="error"
               onClick={() => setConfirmOpen(true)}
             >
-              {form.active ? 'Deactivate' : 'Activate'} User
+              {form.active ? 'Deactivate' : 'Activate'}
             </Button>
             <Button variant="outlined" onClick={() => navigate('/manage-users')}>
               Back to Users
@@ -141,22 +146,22 @@ export default function UserDetails() {
         </Paper>
 
         <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
             Confirm Action
             <IconButton onClick={() => setConfirmOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ pt: 1.5 }}>
             <Typography>
               Are you sure you want to {form.active ? 'deactivate' : 'activate'} this user?
             </Typography>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: 1.5 }}>
             <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button onClick={handleToggleActive} color="error">
+            <LoadingButton onClick={handleToggleActive} color="error" loading={toggling}>
               {form.active ? 'Deactivate' : 'Activate'}
-            </Button>
+            </LoadingButton>
           </DialogActions>
         </Dialog>
       </Container>

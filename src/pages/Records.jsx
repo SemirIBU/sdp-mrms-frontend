@@ -27,6 +27,7 @@ import { fetchPatients } from '../api/patients';
 import { isDoctor, isAdmin } from '../utils/auth';
 import { getBaseUrl } from '../api/client';
 import { useTheme } from '@mui/material/styles';
+import LoadingButton from '../components/LoadingButton';
 
 export default function Records() {
   const [rows, setRows] = useState([]);
@@ -42,6 +43,7 @@ export default function Records() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -84,6 +86,7 @@ export default function Records() {
     if (Object.keys(newErrors).length > 0) return;
 
     try {
+      setSubmitting(true);
       if (editMode) {
         const fd = new FormData();
         fd.append('title', form.title);
@@ -115,6 +118,8 @@ export default function Records() {
       fetchRecords().then((res) => setRows(res.data));
     } catch (e) {
       toast.error(e.message || `Failed to ${editMode ? 'update' : 'create'} record`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -131,7 +136,13 @@ export default function Records() {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                  setForm({ title: '', description: '', patient: '', file: null });
+                  setErrors({});
+                  setEditMode(false);
+                  setEditId(null);
+                  setOpen(true);
+                }}
               >
                 New Record
               </Button>
@@ -267,6 +278,25 @@ export default function Records() {
                       ) : (
                         '—'
                       )
+                  },
+                  {
+                    field: 'actions',
+                    headerName: '',
+                    flex: 1,
+                    sortable: false,
+                    filterable: false,
+                    renderCell: (params) => (
+                      (isAdmin() || isDoctor()) && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEdit(params.row)}
+                        >
+                          Edit
+                        </Button>
+                      )
+                    )
                   }
                 ]}
                 sx={{
@@ -317,7 +347,7 @@ export default function Records() {
           justifyContent: 'space-between',
           fontWeight: 'bold',
           fontSize: '1.3rem',
-          py: 2.5
+          py: 1.5
         }}>
           {editMode ? '✏️ Edit Medical Record' : '📋 New Medical Record'}
           <IconButton 
@@ -330,7 +360,7 @@ export default function Records() {
         
         <DialogContent sx={{ p: 3 }}>
           {/* Record Details Section */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 3, pt: 2 }}>
             <Typography 
               variant="h6" 
               sx={{ 
@@ -466,7 +496,7 @@ export default function Records() {
         </DialogContent>
         
         <DialogActions sx={{ 
-          p: 2.5, 
+          p: 1.5, 
           borderTop: '1px solid #e0e0e0',
           gap: 1,
           justifyContent: 'flex-end'
@@ -477,10 +507,11 @@ export default function Records() {
           >
             Cancel
           </Button>
-          <Button 
+          <LoadingButton 
             variant="contained" 
             color="primary" 
             onClick={submit}
+            loading={submitting}
             sx={{ 
               px: 4,
               fontWeight: 600,
@@ -488,7 +519,7 @@ export default function Records() {
             }}
           >
             {editMode ? 'Update Record' : 'Create Record'}
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

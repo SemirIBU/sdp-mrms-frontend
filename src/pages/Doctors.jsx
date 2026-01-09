@@ -23,6 +23,7 @@ import {
 import { Search as SearchIcon, Close as CloseIcon, Edit as EditIcon } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import { useTheme } from '@mui/material/styles';
+import LoadingButton from '../components/LoadingButton';
 
 export default function Doctors() {
   const [list, setList] = useState([]);
@@ -32,6 +33,7 @@ export default function Doctors() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -68,8 +70,11 @@ export default function Doctors() {
     if (Object.keys(newErrors).length > 0) return;
 
     try {
+      setSubmitting(true);
       if (editMode) {
         await API.put(`/doctors/${editId}`, {
+          name: form.name,
+          email: form.email,
           specialization: form.specialization
         });
         toast.success('Doctor updated successfully!');
@@ -95,6 +100,8 @@ export default function Doctors() {
       window.location.reload();
     } catch (e) {
       toast.error(e.response?.data?.error || `Failed to ${editMode ? 'update' : 'create'} doctor`);
+    } finally {
+      setSubmitting(false);
     }
   };
   return (
@@ -107,7 +114,13 @@ export default function Doctors() {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setForm({ name: '', email: '', specialization: '' });
+              setErrors({});
+              setEditMode(false);
+              setEditId(null);
+              setOpen(true);
+            }}
           >
             Add Doctor
           </Button>
@@ -224,6 +237,23 @@ export default function Doctors() {
                   flex: 1,
                   valueGetter: (value, row) =>
                     new Date(row.createdAt).toLocaleDateString('en-GB')
+                },
+                {
+                  field: 'actions',
+                  headerName: '',
+                  flex: 1,
+                  sortable: false,
+                  filterable: false,
+                  renderCell: (params) => (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<EditIcon />}
+                      onClick={() => handleEdit(params.row)}
+                    >
+                      Edit
+                    </Button>
+                  )
                 }
               ]}
               getRowId={(row) => row._id}
@@ -275,7 +305,7 @@ export default function Doctors() {
             justifyContent: 'space-between',
             fontWeight: 'bold',
             fontSize: '1.3rem',
-            py: 2.5
+            py: 1.5
           }}>
             {editMode ? '✏️ Edit Doctor' : '➕ Add New Doctor'}
             <IconButton 
@@ -288,7 +318,7 @@ export default function Doctors() {
           
           <DialogContent sx={{ p: 3 }}>
             {/* Personal Information Section */}
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3, pt: 2 }}>
               <Typography 
                 variant="h6" 
                 sx={{ 
@@ -369,7 +399,7 @@ export default function Doctors() {
           </DialogContent>
           
           <DialogActions sx={{ 
-            p: 2.5, 
+            p: 1.5, 
             borderTop: '1px solid #e0e0e0',
             gap: 1,
             justifyContent: 'flex-end'
@@ -380,10 +410,11 @@ export default function Doctors() {
             >
               Cancel
             </Button>
-            <Button 
+            <LoadingButton 
               variant="contained" 
               color="primary" 
               onClick={handleCreate}
+              loading={submitting}
               sx={{ 
                 px: 4,
                 fontWeight: 600,
@@ -391,7 +422,7 @@ export default function Doctors() {
               }}
             >
               {editMode ? 'Update Doctor' : 'Create Doctor'}
-            </Button>
+            </LoadingButton>
           </DialogActions>
         </Dialog>
       </Container>

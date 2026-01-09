@@ -20,8 +20,10 @@ import {
   Card,
   CardContent,
   CardHeader,
-  useMediaQuery
+  useMediaQuery,
+  Autocomplete
 } from '@mui/material';
+import LoadingButton from '../components/LoadingButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,17 +32,22 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
+import { isAdmin, isDoctor, isPatient } from '../utils/auth';
 export default function Appointments() {
   const [list, setList] = useState([]);
   const [doctorId, setDoctorId] = useState('');
+  const [patientId, setPatientId] = useState('');
   const [slot, setSlot] = useState('');
   const [doctors, setDoctors] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelId, setCancelId] = useState(null);
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [selectedTime, setSelectedTime] = useState(null);
   const [availableTimes, setAvailableTimes] = useState([]);
+  const [booking, setBooking] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   useEffect(() => {
@@ -56,6 +63,11 @@ export default function Appointments() {
     API.get('/doctors')
       .then((r) => setDoctors(r.data))
       .catch(() => {});
+    if (isAdmin() || isDoctor()) {
+      API.get('/patients')
+        .then((r) => setPatients(r.data))
+        .catch(() => {});
+    }
   }, []);
 
   const fetchAvailableTimes = async () => {
@@ -77,6 +89,7 @@ export default function Appointments() {
     e.preventDefault();
     const newErrors = {};
     if (!doctorId) newErrors.doctorId = 'Please select a doctor';
+    if ((isAdmin() || isDoctor()) && !patientId) newErrors.patientId = 'Please select a patient';
     if (!selectedDate || !selectedTime)
       newErrors.slot = 'Please select date and time';
     setErrors(newErrors);
@@ -98,18 +111,29 @@ export default function Appointments() {
       return;
     }
     try {
-      await API.post('/appointments/book', {
+      setBooking(true);
+      const bookingData = {
         doctorId,
         slot: slotString
-      });
+      };
+      
+      // Add patient ID for admin/doctor roles
+      if (isAdmin() || isDoctor()) {
+        bookingData.patientId = patientId;
+      }
+      
+      await API.post('/appointments/book', bookingData);
       toast.success('Appointment booked successfully!');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to book');
+    } finally {
+      setBooking(false);
     }
   };
   const cancel = async () => {
     try {
+      setCancelling(true);
       await API.post(`/appointments/${cancelId}/cancel`);
       toast.success('Appointment canceled');
       setConfirmOpen(false);
@@ -117,6 +141,8 @@ export default function Appointments() {
       window.location.reload();
     } catch (err) {
       toast.error('Failed to cancel');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -194,21 +220,38 @@ export default function Appointments() {
                     onSubmit={book}
                     sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
                   >
-                    <TextField
-                      select
-                      value={doctorId}
-                      onChange={(e) => setDoctorId(e.target.value)}
-                      label="Doctor"
-                      fullWidth
-                      error={!!errors.doctorId}
-                      helperText={errors.doctorId}
-                    >
-                      {doctors.map((d) => (
-                        <MenuItem key={d._id} value={d._id}>
-                          {d.user?.name} ({d.specialization})
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    {(isAdmin() || isDoctor()) && (
+                      <Autocomplete
+                        options={patients}
+                        getOptionLabel={(patient) => `${patient.user?.name || ''} (ID: ${patient.uniqueCitizenIdentifier || 'N/A'})`}
+                        value={patients.find((p) => p._id === patientId) || null}
+                        onChange={(event, newValue) => setPatientId(newValue ? newValue._id : '')}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Select Patient"
+                            error={!!errors.patientId}
+                            helperText={errors.patientId}
+                          />
+                        )}
+                        isOptionEqualToValue={(option, value) => option._id === value._id}
+                      />
+                    )}
+                    <Autocomplete
+                      options={doctors}
+                      getOptionLabel={(doctor) => `${doctor.user?.name || ''} (${doctor.specialization || ''})`}
+                      value={doctors.find((d) => d._id === doctorId) || null}
+                      onChange={(event, newValue) => setDoctorId(newValue ? newValue._id : '')}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Doctor"
+                          error={!!errors.doctorId}
+                          helperText={errors.doctorId}
+                        />
+                      )}
+                      isOptionEqualToValue={(option, value) => option._id === value._id}
+                    />
                     <DatePicker
                       label="Select Date"
                       value={selectedDate}
@@ -239,9 +282,9 @@ export default function Appointments() {
                     {errors.slot && (
                       <Typography color="error" variant="body2">{errors.slot}</Typography>
                     )}
-                    <Button variant="contained" sx={{ mt: 1 }} type="submit" fullWidth>
+                    <LoadingButton variant="contained" sx={{ mt: 1 }} type="submit" fullWidth loading={booking}>
                       Book
-                    </Button>
+                    </LoadingButton>
                   </Box>
                 </LocalizationProvider>
               </Paper>
@@ -294,21 +337,38 @@ export default function Appointments() {
                     onSubmit={book}
                     sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
                   >
-                    <TextField
-                      select
-                      value={doctorId}
-                      onChange={(e) => setDoctorId(e.target.value)}
-                      label="Doctor"
-                      fullWidth
-                      error={!!errors.doctorId}
-                      helperText={errors.doctorId}
-                    >
-                      {doctors.map((d) => (
-                        <MenuItem key={d._id} value={d._id}>
-                          {d.user?.name} ({d.specialization})
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    {(isAdmin() || isDoctor()) && (
+                      <Autocomplete
+                        options={patients}
+                        getOptionLabel={(patient) => `${patient.user?.name || ''} (ID: ${patient.uniqueCitizenIdentifier || 'N/A'})`}
+                        value={patients.find((p) => p._id === patientId) || null}
+                        onChange={(event, newValue) => setPatientId(newValue ? newValue._id : '')}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Select Patient"
+                            error={!!errors.patientId}
+                            helperText={errors.patientId}
+                          />
+                        )}
+                        isOptionEqualToValue={(option, value) => option._id === value._id}
+                      />
+                    )}
+                    <Autocomplete
+                      options={doctors}
+                      getOptionLabel={(doctor) => `${doctor.user?.name || ''} (${doctor.specialization || ''})`}
+                      value={doctors.find((d) => d._id === doctorId) || null}
+                      onChange={(event, newValue) => setDoctorId(newValue ? newValue._id : '')}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Doctor"
+                          error={!!errors.doctorId}
+                          helperText={errors.doctorId}
+                        />
+                      )}
+                      isOptionEqualToValue={(option, value) => option._id === value._id}
+                    />
                     <DatePicker
                       label="Select Date"
                       value={selectedDate}
@@ -339,9 +399,9 @@ export default function Appointments() {
                     {errors.slot && (
                       <Typography color="error">{errors.slot}</Typography>
                     )}
-                    <Button variant="contained" sx={{ mt: 1 }} type="submit">
+                    <LoadingButton variant="contained" sx={{ mt: 1 }} type="submit" loading={booking}>
                       Book
-                    </Button>
+                    </LoadingButton>
                   </Box>
                 </LocalizationProvider>
               </Paper>
@@ -351,22 +411,22 @@ export default function Appointments() {
       </Container>
 
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
           Confirm Cancellation
           <IconButton onClick={() => setConfirmOpen(false)} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: 1.5 }}>
           <Typography>
             Are you sure you want to cancel this appointment?
           </Typography>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 1.5 }}>
           <Button onClick={() => setConfirmOpen(false)}>No</Button>
-          <Button onClick={cancel} color="error">
+          <LoadingButton onClick={cancel} color="error" loading={cancelling}>
             Yes, Cancel
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </Box>

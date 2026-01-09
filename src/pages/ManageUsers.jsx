@@ -82,7 +82,7 @@ export default function ManageUsers() {
     },
     {
       field: 'actions',
-      headerName: 'Actions',
+      headerName: '',
       flex: 1,
       renderCell: (params) => (
         <Button

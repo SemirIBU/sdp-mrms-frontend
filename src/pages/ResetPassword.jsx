@@ -11,6 +11,7 @@ import {
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import API from '../api/client';
 import toast from 'react-hot-toast';
+import LoadingButton from '../components/LoadingButton';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -85,15 +86,15 @@ export default function ResetPassword() {
               required
               sx={{ mb: 3 }}
             />
-            <Button
+            <LoadingButton
               type="submit"
               variant="contained"
               fullWidth
-              disabled={loading}
+              loading={loading}
               sx={{ mb: 2 }}
             >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </Button>
+              Reset Password
+            </LoadingButton>
           </form>
           <Box sx={{ textAlign: 'center' }}>
             <Link component={RouterLink} to="/login">

@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Container,
   Paper,
   TextField,
@@ -11,10 +10,12 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import API from '../api/client';
 import { useState, useEffect } from 'react';
 import { isAuthenticated } from '../utils/auth';
+import LoadingButton from '../components/LoadingButton';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,11 +24,16 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
-    const res = await API.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('role', res.data.user?.role || '');
-    localStorage.setItem('name', res.data.user?.name || '');
-    window.location.href = '/';
+    setLoading(true);
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('role', res.data.user?.role || '');
+      localStorage.setItem('name', res.data.user?.name || '');
+      window.location.href = '/';
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,9 +70,9 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
+            <LoadingButton type="submit" variant="contained" fullWidth sx={{ mt: 2 }} loading={loading}>
               Sign In
-            </Button>
+            </LoadingButton>
             <Box sx={{ mt: 2, textAlign: 'center' }}>
               <Link component={RouterLink} to="/forgot-password">
                 Forgot Password?

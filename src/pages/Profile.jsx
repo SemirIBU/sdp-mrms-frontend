@@ -18,11 +18,13 @@ import { useTheme } from '@mui/material/styles';
 import API from '../api/client';
 import { getName, getRole } from '../utils/auth';
 import toast from 'react-hot-toast';
+import LoadingButton from '../components/LoadingButton';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', email: '' });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -52,6 +54,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
+      setSaving(true);
       // In a real app, you'd call an API to update the profile
       // For now, just update localStorage
       localStorage.setItem('name', form.name);
@@ -60,6 +63,8 @@ export default function Profile() {
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -229,15 +234,16 @@ export default function Profile() {
                           >
                             Cancel
                           </Button>
-                          <Button
+                          <LoadingButton
                             variant="contained"
                             color="primary"
                             startIcon={<SaveIcon />}
                             onClick={handleSave}
+                            loading={saving}
                             fullWidth
                           >
                             Save Changes
-                          </Button>
+                          </LoadingButton>
                         </Box>
                       )}
                     </Box>
@@ -378,15 +384,16 @@ export default function Profile() {
                             >
                               Cancel
                             </Button>
-                            <Button
+                            <LoadingButton
                               variant="contained"
                               color="primary"
                               startIcon={<SaveIcon />}
                               onClick={handleSave}
+                              loading={saving}
                               fullWidth={isMobile}
                             >
                               Save Changes
-                            </Button>
+                            </LoadingButton>
                           </Box>
                         )}
                       </Box>

@@ -200,8 +200,8 @@ export default function Dashboard() {
         {(isDoctor() || isPatient()) && (
           <>
             {/* Stats Overview */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex' }}>
+            <Grid container spacing={3} sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'  }}>
+              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex', width: { xs: '100%', sm: '100%', md: '31%' } }}>
                 <Card sx={{ width: '100%', boxShadow: 3, bgcolor: (theme) => theme.palette.custom.cardBackground }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -213,7 +213,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex', width: { xs: '100%', sm: '100%', md: '31%' } }}>
                 <Card sx={{ width: '100%', boxShadow: 3, bgcolor: (theme) => theme.palette.custom.cardBackground }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -225,7 +225,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex', width: { xs: '100%', sm: '100%', md: '31%' } }}>
                 <Card sx={{ width: '100%', boxShadow: 3, bgcolor: (theme) => theme.palette.custom.cardBackground }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
