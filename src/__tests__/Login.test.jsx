@@ -5,6 +5,17 @@ import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import Login from '../pages/Login';
 
+// Mock the API client module to avoid import.meta issues
+jest.mock('../api/client', () => {
+  const axios = require('axios');
+  const mockAPI = axios.create({ baseURL: 'http://localhost:4001/api' });
+  mockAPI.get = jest.fn();
+  mockAPI.post = jest.fn();
+  mockAPI.put = jest.fn();
+  mockAPI.delete = jest.fn();
+  return { default: mockAPI };
+});
+
 const theme = createTheme({
   palette: {
     custom: {

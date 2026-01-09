@@ -1,24 +1,8 @@
 import axios from 'axios';
 
-// Vite injects import.meta.env.* at build time; fall back to process.env for tests
-const getApiUrl = () => {
-  // In test environment, use process.env
-  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-    return process.env.VITE_API_URL || 'http://localhost:4001/api';
-  }
-  
-  // In Vite environment, use dynamic access to avoid Jest parse errors
-  // This evaluates at runtime, not parse time
-  const getMeta = new Function('return import.meta');
-  try {
-    const meta = getMeta();
-    return meta.env?.VITE_API_URL || 'http://localhost:4001/api';
-  } catch {
-    return 'http://localhost:4001/api';
-  }
-};
-
-const API = axios.create({ baseURL: getApiUrl() });
+const API = axios.create({ 
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4001/api' 
+});
 let pending = 0;
 const notify = () => {
   try {
